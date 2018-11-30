@@ -37,6 +37,9 @@ public class Robot extends TimedRobot {
 
     m_leftStick = new Joystick(0);
 
+    // must initialize nav system here for the navX-MXP
+    NavXSys.getInstance();
+
     mDriveSys = DriveSys.getInstance();
     mDriveSys.setSensorStartPosn();
   }
@@ -48,7 +51,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopInit() {
-
+    NavXSys.getInstance().zeroYawHeading(); 
   }
 
   /**
@@ -69,7 +72,8 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousInit() {
-
+    NavXSys.getInstance().zeroYawHeading(); 
+    mDriveSys.initDriveDist(4);
   }
 
 
@@ -78,7 +82,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
-
+    mDriveSys.driveDist();
   }
 
 

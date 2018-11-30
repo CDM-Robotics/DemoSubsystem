@@ -15,15 +15,9 @@ import com.kauailabs.navx.frc.AHRS;
 import edu.wpi.first.wpilibj.command.Subsystem;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.PIDController;
-import edu.wpi.first.wpilibj.PIDOutput;
-import edu.wpi.first.wpilibj.SPI;
-import edu.wpi.first.wpilibj.SendableBase;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Compressor;
-import edu.wpi.first.wpilibj.DoubleSolenoid;
+
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import org.cdm.team6072.Robot;
 import org.cdm.team6072.RobotConfig;
 
 
@@ -91,6 +85,10 @@ public class DriveSys extends Subsystem {
 
             mMasterTalons.add(mRight_Master);
             mMasterTalons.add(mLeft_Master);
+
+            mNavX = NavXSys.getInstance().getNavX();
+            initYawPID();
+            initDrivePID();
         }
         catch (Exception ex) {
             System.out.println("Exception in DriveSys ctor: " + ex.getMessage() + "\r\n" + ex.getStackTrace());
@@ -112,13 +110,17 @@ public class DriveSys extends Subsystem {
     }
 
 
+    /**
+     * Utility method to sleep for a period if we need to
+     */
     private void sleep(int milliSecs) {
         try {
             Thread.sleep(milliSecs);
         } catch (Exception ex) {}
     }
 
-        /**
+
+    /**
      * Set the quad posn to same as PW posn.
      * Left motor sensor goes -ve when driving forward
      * This should only be called from Robot.Init because of the time delays
@@ -141,16 +143,149 @@ public class DriveSys extends Subsystem {
         sleep(100);
     }
 
+
     public int getLeftSensPosn() {
         return mLeft_Master.getSensorCollection().getPulseWidthPosition();
     }
 
 
-    private int mLoopCnt = 0;
     
     public void arcadeDrive(double mag, double yaw) {
         yaw = yaw * 0.8;        // reduce sensitivity on turn
         mRoboDrive.arcadeDrive(-mag, yaw, true);
+    }
+
+
+
+    private int mTargetDist = 0;        // distance to travel in ticks
+    private int mStartPosn = 0;         // start position in Talon ticks
+    private int mTargPosn = 0;          // mStartPosn + mTargetDist
+    private boolean mHitTarg = false;   // set true when we hit target
+    private int mMoveDistLoopCnt;       // sued for debug output
+
+    /**
+     * Tell the drive system that we want to drive N feet
+     * Need to:
+     *      log our start position
+     *      calculate how many ticks we need to travel
+     *      
+     * @param driveInches
+     */
+    public void initDriveDist(double distInFeet) {
+        mTargetDist = (int) ((distInFeet / (Math.PI * 0.5)) * 4096);
+        System.out.printf("DS.startMoveDist: distInFeet: %.3f   mTargdist:  %d   floatDist: %.3f  \r\n", distInFeet, mTargetDist, dist);
+        mStartPosn = mRight_Master.getSensorCollection().getPulseWidthPosition();
+        mTargPosn = mStartPosn + mTargetDist;
+        mHitTarg = false;
+        mMoveDistLoopCnt = 0;
+        mDrivePID.setSetpoint(mTargPosn);
+        mDrivePID.enable();
+    }
+
+
+    /**
+     * While we have not completed driving, move forward
+     * Need to:
+     *      check current position
+     *      decide if have driven far enough
+     *      if not, keep driving
+     *      if yes, stop
+     */
+    public void driveDist() {
+        int curPosn = mRight_Master.getSensorCollection().getPulseWidthPosition();
+        double mag = mDrivePIDOut.getVal();
+        double yaw = mYawPIDOut.getVal();
+        if (mMoveDistLoopCnt++ % 5 == 0) {
+            System.out.printf("DS.moveDistPIDExec: start: %d   cur: %d   targ: %d   mag: %.3f  yaw: %.3f  \r\n", mStartPosn, curPosn, mTargPosn, mag, yaw);
+        }
+        mRoboDrive.arcadeDrive(mag, yaw, false);
+        mHitTarg = mDrivePID.onTarget();
+    }
+
+
+    /**
+     * Called by external system to find out if we have completed driving distance
+     * @return  true if have completed driving
+     */
+    public boolean isDriveDistComplete() {
+        return mHitTarg;
+    }
+
+
+
+
+    // ----------------  Drive distance PID  -----------------------------------------
+
+    // magic values used to initialize the PID controller
+    static final double kF_drive = 2.0;
+    static final double kP_drive = 1.0;
+    static final double kI_drive = 1.0;
+    static final double kD_drive = 0.00;
+
+    // calculate allowed dist error in inches
+    private static final int ALLOWED_DISTERR = (int) (6 / (Math.PI * 6) * 4096);
+
+    private PIDController mDrivePID;
+    private PIDOutReceiver mDrivePIDOut;
+    private PIDSourceTalonPW mTalonPIDSource;
+
+
+    private void initDrivePID() {
+        System.out.println("DriveSys.initDrivePID:  ");
+        mDrivePIDOut = new PIDOutReceiver();
+        mTalonPIDSource = new PIDSourceTalonPW(mRight_Master);
+        mDrivePID = new PIDController(kP_drive, kI_drive, kD_drive, kF_drive, mTalonPIDSource, mDrivePIDOut);
+        mDrivePID.setName("DriveSys.DrivePID");
+        //mDrivePID.setInputRange(-180.0f,  180.0f);
+        mDrivePID.setOutputRange(-0.8, 0.8);
+        // Makes PIDController.onTarget() return True when PIDInput is within the Setpoint +/- the absolute tolerance.
+        mDrivePID.setAbsoluteTolerance(ALLOWED_DISTERR);
+        // Treats the input ranges as the same, continuous point rather than two boundaries, so it can calculate shorter routes.
+        // For example, in a Drive, 0 and 360 are the same point, and should be continuous. Needs setInputRanges.
+        mDrivePID.setContinuous(false);
+    }
+
+
+
+    // ------------------ NavX PID for yaw  ------------------------------------
+
+    /**
+    * raise P constant until controller oscillates. If oscillation too much,
+    * lower constant a bit raise D constant to damp oscillation, causing it to
+    * converge. D also slows controller's approach to setpoint so will need to
+    * tweak balance of P and D if P + D are tuned and it oscillates +
+    * converges, but not to correct setpoint, increase I = steady-state error -
+    * positive, nonzero integral constant will cause controller to correct for
+    * it
+    */
+    static final double kP_yaw = 0.03;
+    static final double kI_yaw = 0.00;
+    static final double kD_yaw = 0.00;
+    static final double kF_yaw = 0.00;
+    /* This tuning parameter indicates how close to "on target" the    */
+    /* PID Controller will attempt to get.                             */
+    static final double kToleranceDegrees = 2.0f;
+
+
+    private AHRS  mNavX;
+    private PIDController mYawPID;
+    private PIDOutReceiver mYawPIDOut;
+
+
+    private void initYawPID() {
+        System.out.println("DriveSys.initYawPID:  AHRS.SrcType: " + mNavX.getPIDSourceType().name());
+        mYawPIDOut = new PIDOutReceiver();
+        mYawPID = new PIDController(kP_yaw, kI_yaw, kD_yaw, kF_yaw, mNavX, mYawPIDOut);
+        mYawPID.setName("DriveSys.GyroPID");
+        mYawPID.setInputRange(-180.0f,  180.0f);
+        mYawPID.setOutputRange(-1.0, 1.0);
+        // Makes PIDController.onTarget() return True when PIDInput is within the Setpoint +/- the absolute tolerance.
+        mYawPID.setAbsoluteTolerance(kToleranceDegrees);
+        // Treats the input ranges as the same, continuous point rather than two boundaries, so it can calculate shorter routes.
+        // For example, in a gyro, 0 and 360 are the same point, and should be continuous. Needs setInputRanges.
+        mYawPID.setContinuous(true);
+        mYawPID.setSetpoint(0);
+        mYawPID.enable();
     }
 
 
