@@ -161,21 +161,23 @@ public class DriveSys extends Subsystem {
     private int mStartPosn = 0;         // start position in Talon ticks
     private int mTargPosn = 0;          // mStartPosn + mTargetDist
     private boolean mHitTarg = false;   // set true when we hit target
-    private int mMoveDistLoopCnt;       // sued for debug output
+    private int mMoveDistLoopCnt;       // used for debug output
 
     /**
      * Tell the drive system that we want to drive N feet
+     * Assume that the yaw PID has been initialized already - we may need to set up here later
      * Need to:
      *      log our start position
      *      calculate how many ticks we need to travel
      *      
-     * @param driveInches
+     * @param distInFeet
      */
     public void initDriveDist(double distInFeet) {
-        mTargetDist = (int) ((distInFeet / (Math.PI * 0.5)) * 4096);
-        System.out.printf("DS.startMoveDist: distInFeet: %.3f   mTargdist:  %d   floatDist: %.3f  \r\n", distInFeet, mTargetDist, dist);
+        double circumferenceInFeet = Math.PI * 0.5;
+        mTargetDist = (int) ((distInFeet / (circumferenceInFeet)) * 4096);
         mStartPosn = mRight_Master.getSensorCollection().getPulseWidthPosition();
         mTargPosn = mStartPosn + mTargetDist;
+        System.out.printf("DS.initDriveDist:  distInFeet: %.3f   mTargdist:  %d    mStartPos: %.3f  mTragPosn: %.3f\r\n", distInFeet, mTargetDist, mStartPosn, mTargPosn);
         mHitTarg = false;
         mMoveDistLoopCnt = 0;
         mDrivePID.setSetpoint(mTargPosn);
@@ -196,7 +198,7 @@ public class DriveSys extends Subsystem {
         double mag = mDrivePIDOut.getVal();
         double yaw = mYawPIDOut.getVal();
         if (mMoveDistLoopCnt++ % 5 == 0) {
-            System.out.printf("DS.moveDistPIDExec: start: %d   cur: %d   targ: %d   mag: %.3f  yaw: %.3f  \r\n", mStartPosn, curPosn, mTargPosn, mag, yaw);
+            System.out.printf("DS.driveDist: start: %d   cur: %d   targ: %d   mag: %.3f  yaw: %.3f  \r\n", mStartPosn, curPosn, mTargPosn, mag, yaw);
         }
         mRoboDrive.arcadeDrive(mag, yaw, false);
         mHitTarg = mDrivePID.onTarget();
@@ -216,11 +218,15 @@ public class DriveSys extends Subsystem {
 
     // ----------------  Drive distance PID  -----------------------------------------
 
+    // resources for understanding PID
+    //      http://blog.opticontrols.com/archives/344   --  good intro to PID
+    //      https://www.controleng.com/articles/feed-forwards-augment-pid-control/  --  what the feed forward term does
+
     // magic values used to initialize the PID controller
-    static final double kF_drive = 2.0;
-    static final double kP_drive = 1.0;
-    static final double kI_drive = 1.0;
-    static final double kD_drive = 0.00;
+    static final double kF_drive = 2.0;     // feed forward - tries to estimate target and set motor to correct value
+    static final double kP_drive = 1.0;     // specify the proportional (fixed) response to error
+    static final double kI_drive = 1.0;     // specify response based on how big error is - larger error means bigger response
+    static final double kD_drive = 0.00;    // rarely used - specify response based on how fast error is changing
 
     // calculate allowed dist error in inches
     private static final int ALLOWED_DISTERR = (int) (6 / (Math.PI * 6) * 4096);
@@ -258,10 +264,10 @@ public class DriveSys extends Subsystem {
     * positive, nonzero integral constant will cause controller to correct for
     * it
     */
+    static final double kF_yaw = 0.00;
     static final double kP_yaw = 0.03;
     static final double kI_yaw = 0.00;
     static final double kD_yaw = 0.00;
-    static final double kF_yaw = 0.00;
     /* This tuning parameter indicates how close to "on target" the    */
     /* PID Controller will attempt to get.                             */
     static final double kToleranceDegrees = 2.0f;
