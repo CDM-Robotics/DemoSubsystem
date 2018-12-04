@@ -237,11 +237,11 @@ public class DriveSys extends Subsystem {
 
 
     private void initDrivePID() {
-        System.out.println("DriveSys.initDrivePID:  ");
+        System.out.println("DS.initDrivePID:  ");
         mDrivePIDOut = new PIDOutReceiver();
         mTalonPIDSource = new PIDSourceTalonPW(mRight_Master);
         mDrivePID = new PIDController(kP_drive, kI_drive, kD_drive, kF_drive, mTalonPIDSource, mDrivePIDOut);
-        mDrivePID.setName("DriveSys.DrivePID");
+        mDrivePID.setName("DS.DrivePID");
         //mDrivePID.setInputRange(-180.0f,  180.0f);
         mDrivePID.setOutputRange(-0.8, 0.8);
         // Makes PIDController.onTarget() return True when PIDInput is within the Setpoint +/- the absolute tolerance.
@@ -255,15 +255,7 @@ public class DriveSys extends Subsystem {
 
     // ------------------ NavX PID for yaw  ------------------------------------
 
-    /**
-    * raise P constant until controller oscillates. If oscillation too much,
-    * lower constant a bit raise D constant to damp oscillation, causing it to
-    * converge. D also slows controller's approach to setpoint so will need to
-    * tweak balance of P and D if P + D are tuned and it oscillates +
-    * converges, but not to correct setpoint, increase I = steady-state error -
-    * positive, nonzero integral constant will cause controller to correct for
-    * it
-    */
+    
     static final double kF_yaw = 0.00;
     static final double kP_yaw = 0.03;
     static final double kI_yaw = 0.00;
@@ -279,10 +271,10 @@ public class DriveSys extends Subsystem {
 
 
     private void initYawPID() {
-        System.out.println("DriveSys.initYawPID:  AHRS.SrcType: " + mNavX.getPIDSourceType().name());
+        System.out.println("DS.initYawPID:  AHRS.SrcType: " + mNavX.getPIDSourceType().name());
         mYawPIDOut = new PIDOutReceiver();
         mYawPID = new PIDController(kP_yaw, kI_yaw, kD_yaw, kF_yaw, mNavX, mYawPIDOut);
-        mYawPID.setName("DriveSys.GyroPID");
+        mYawPID.setName("DS.YawPID");
         mYawPID.setInputRange(-180.0f,  180.0f);
         mYawPID.setOutputRange(-1.0, 1.0);
         // Makes PIDController.onTarget() return True when PIDInput is within the Setpoint +/- the absolute tolerance.

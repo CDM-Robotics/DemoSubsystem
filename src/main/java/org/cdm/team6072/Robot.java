@@ -8,9 +8,10 @@
 package org.cdm.team6072;
 
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.Joystick;
 
-
+import org.cdm.team6072.commands.drive.ArcadeDriveCmd;
 import org.cdm.team6072.subsystems.*;
 
 /**
@@ -25,6 +26,9 @@ public class Robot extends TimedRobot {
 
   private DriveSys mDriveSys;
   private Joystick m_leftStick;
+
+  // ControlBoard holds the operator interface code such as JoyStick
+  private ControlBoard mControlBoard  = ControlBoard.getInstance();
 
   /**
    * This function is run when the robot is first started up and should be
@@ -50,18 +54,23 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() {
     NavXSys.getInstance().zeroYawHeading(); 
+    ArcadeDriveCmd  mArcadeDriveCmd = new ArcadeDriveCmd(mControlBoard.drive_stick);
+    Scheduler.getInstance().removeAll();
+    Scheduler.getInstance().add(mArcadeDriveCmd);
   }
+
 
   /**
    * This function is called periodically during teleoperated mode.
    */
   @Override
   public void teleopPeriodic() {
-    double mag, yaw;
-    mag = m_leftStick.getY();                   // how fast
-    yaw = m_leftStick.getX();                   // turn left or right
-    yaw = yaw * 0.8;                            // reduce sensitivity on turn
-    mDriveSys.arcadeDrive(-mag, yaw);
+    Scheduler.getInstance().run();
+    // double mag, yaw;
+    // mag = m_leftStick.getY();                   // how fast
+    // yaw = m_leftStick.getX();                   // turn left or right
+    // yaw = yaw * 0.8;                            // reduce sensitivity on turn
+    // mDriveSys.arcadeDrive(-mag, yaw);
   }
 
 
