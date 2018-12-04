@@ -7,7 +7,7 @@ import org.cdm.team6072.RobotConfig;
 
 public class IntakeSys {
 
-    private WPI_TalonSRX mTalonLeft; // Calls TalonX
+    private WPI_TalonSRX mTalon; // Calls TalonX
 
     private static IntakeSys mInstance; 
 
@@ -20,15 +20,15 @@ public class IntakeSys {
 
     private IntakeSys() {
 
-        mTalonLeft = new WPI_TalonSRX(RobotConfig.INTAKE_TALON_LEFT); // InitiallizesTalonX
-        mTalonLeft.setNeutralMode(NeutralMode.Brake); // Protection from Speedy Vroom Vroom 
-        mTalonLeft.setInverted(false); // Sets Direction of TalonX
+        mTalon = new WPI_TalonSRX(RobotConfig.INTAKE_TALON_LEFT); // InitiallizesTalonX
+        mTalon.setNeutralMode(NeutralMode.Brake); // Protection from Speedy Vroom Vroom 
+        mTalon.setInverted(false); // Sets Direction of TalonX
     }
 
     public void slowRunWheels(String dir, double speed) {
         if (dir == "Out") { // Selects Direction
             speed *= -1;
-        mTalonLeft.set(ControlMode.PercentOutput, speed); // Scales Speed Down/Up
+        mTalon.set(ControlMode.PercentOutput, speed); // Scales Speed Down/Up
 
         }
     }
