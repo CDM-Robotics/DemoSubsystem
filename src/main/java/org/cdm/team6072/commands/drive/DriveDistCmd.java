@@ -6,22 +6,21 @@ import org.cdm.team6072.subsystems.DriveSys;
 
 public class DriveDistCmd extends Command {
 
-
     private Joystick mStick;
 
     private DriveSys mDriveSys;
 
-    private float mDistInFeet;
+    private double mDistInFeet;
 
-
+ 
     /**
      * Specify the the command requires the DriveSys subsystem
+     * @param distInFeeet - distance to travel in feet
      */
-    public DriveDistCmd(float distInFeeet) {
+    public DriveDistCmd(double distInFeeet) {
         requires(DriveSys.getInstance());
         mDistInFeet = distInFeeet;
     }
-
 
     @Override
     protected void initialize() {
@@ -29,16 +28,14 @@ public class DriveDistCmd extends Command {
         mDriveSys.initDriveDist(mDistInFeet);
     }
 
-
     /**
-     * Execute is called by the scheduler until the command returns finished
-     * or the OI stops requesting - for example if the whileHeld() button command is used
+     * Execute is called by the scheduler until the command returns finished or the
+     * OI stops requesting - for example if the whileHeld() button command is used
      */
     protected void execute() {
-        //mDriveSys.moveDistanceExec();
+        // mDriveSys.moveDistanceExec();
         mDriveSys.driveDist();
     }
-
 
     /**
      * @return Return true when command is completed
@@ -47,6 +44,5 @@ public class DriveDistCmd extends Command {
     protected boolean isFinished() {
         return mDriveSys.isDriveDistComplete();
     }
-
 
 }

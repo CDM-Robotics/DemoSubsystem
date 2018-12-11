@@ -54,7 +54,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() {
     NavXSys.getInstance().zeroYawHeading(); 
-    ArcadeDriveCmd  mArcadeDriveCmd = new ArcadeDriveCmd(mControlBoard.drive_stick);
+    ArcadeDriveCmd  mArcadeDriveCmd = new ArcadeDriveCmd(mControlBoard.mDriveStick);
     Scheduler.getInstance().removeAll();
     Scheduler.getInstance().add(mArcadeDriveCmd);
   }
