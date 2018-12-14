@@ -16,16 +16,18 @@ import org.cdm.team6072.subsystems.*;
 
 /**
  * The VM is configured to automatically run this class, and to call the
- * functions corresponding to each mode, as described in the IterativeRobot
+ * functions corresponding to each mode, as described in the TimedRobot
  * documentation. If you change the name of this class or the package after
  * creating this project, you must also update the manifest file in the resource
  * directory.
+ * 
+ * IF PACKAGE NAME CHANGES, MAKE SURE TO UPDATE build.gradle:
+ *  def ROBOT_CLASS = "org.cdm.team6072.Robot"
  */
 public class Robot extends TimedRobot {
 
 
   private DriveSys mDriveSys;
-  private Joystick m_leftStick;
 
   // ControlBoard holds the operator interface code such as JoyStick
   private ControlBoard mControlBoard  = ControlBoard.getInstance();
@@ -37,13 +39,23 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
 
+    System.out.println("DemoSubsys.ctor  -------------------------------------------");
+
     m_leftStick = new Joystick(0);
+
+    System.out.println("DemoSubsys.ctor  joystick doen  --------------------------------");
 
     // must initialize nav system here for the navX-MXP
     NavXSys.getInstance();
 
+    System.out.println("DemoSubsys.ctor  NavX done         ----------------------------");
+
     mDriveSys = DriveSys.getInstance();
+
+    System.out.println("DemoSubsys.ctor  driveSys done     -------------------------------");
     mDriveSys.setSensorStartPosn();
+
+    System.out.println("DemoSubsys.ctor  ds.setSensor done     ------------------------");
   }
 
 
