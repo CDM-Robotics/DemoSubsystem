@@ -2,10 +2,7 @@ package org.cdm.team6072.subsystems;
 
 import java.util.ArrayList;
 
-import com.ctre.phoenix.motion.SetValueMotionProfile;
-import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.StatusFrameEnhanced;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -16,7 +13,6 @@ import edu.wpi.first.wpilibj.command.Subsystem;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.PIDController;
 
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.cdm.team6072.RobotConfig;
 
 /**
@@ -152,8 +148,9 @@ public class DriveSys extends Subsystem {
     private boolean mHitTarg = false; // set true when we hit target
     private int mMoveDistLoopCnt; // used for debug output
 
+
     /**
-     * Tell the drive system that we want to drive N feet Assume that the yaw PID
+     * Tell the drive system that we want to drive N feet. Assume that the yaw PID
      * has been initialized already - we may need to set up here later Need to: log
      * our start position calculate how many ticks we need to travel
      * 
@@ -195,8 +192,9 @@ public class DriveSys extends Subsystem {
      * @return true if have completed driving
      */
     public boolean isDriveDistComplete() {
-        return mHitTarg;
+        return mDrivePID.onTarget();
     }
+
 
     // ---------------- Drive distance PID -----------------------------------------
 
@@ -208,8 +206,7 @@ public class DriveSys extends Subsystem {
     // magic values used to initialize the PID controller
     static final double kF_drive = 2.0; // feed forward - tries to estimate target and set motor to correct value
     static final double kP_drive = 1.0; // specify the proportional (fixed) response to error
-    static final double kI_drive = 1.0; // specify response based on how big error is - larger error means bigger
-                                        // response
+    static final double kI_drive = 1.0; // specify response based on how big error is - larger error means bigger response
     static final double kD_drive = 0.00; // rarely used - specify response based on how fast error is changing
 
     // calculate allowed dist error in inches

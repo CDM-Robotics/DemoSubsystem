@@ -1,12 +1,9 @@
 package org.cdm.team6072.commands.drive;
 
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.command.Command;
 import org.cdm.team6072.subsystems.DriveSys;
 
 public class DriveDistCmd extends Command {
-
-    private Joystick mStick;
 
     private DriveSys mDriveSys;
 
